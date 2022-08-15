@@ -14,6 +14,15 @@ app.get("/", (req, res) => {
   res.send("Hello world");
 });
 
+app.get("/api/activeResource", (req, res) => {
+  const resources = getResources();
+  const activeResource = resources.find(
+    (resource) => resource.status === "active"
+  );
+
+  res.send(activeResource);
+});
+
 app.get("/api/resources", (req, res) => {
   const resources = getResources();
   res.send(resources);
@@ -49,8 +58,22 @@ app.patch("/api/resources/:id", (req, res) => {
   const resources = getResources();
   const { id } = req.params;
   const index = resources.findIndex((resource) => resource.id === id);
+  const activeResource = resources.find(
+    (resource) => resource.status === "active"
+  );
+
   resources[index] = req.body;
 
+  // Active resource related functionality
+  if (req.body.status === "active") {
+    if (activeResource) {
+      return res.status(422).send("There is activate resource already!");
+    }
+
+    resources[index].status = "active";
+    resources[index].activationTime = new Date();
+  }
+  // Active resource related functionality
   fs.writeFileSync(pathToFile, JSON.stringify(resources, null, 2), (error) => {
     if (error) {
       return res.status(422).send("Cannot store data in the file!");
